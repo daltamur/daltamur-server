@@ -274,6 +274,16 @@ func convertToSongsStruct(output *dynamodb.QueryOutput) Songs {
 func filterSingleDay(t *time.Time, writer http.ResponseWriter) {
 	svc := setDBInstance()
 	year := strconv.Itoa((*t).Year())
+	monthString := strconv.Itoa(int((*t).Month()))
+	if len(monthString) == 1 {
+		monthString = "0" + monthString
+	}
+
+	dayValString := strconv.Itoa((*t).Day())
+	if len(dayValString) == 1 {
+		dayValString = "0" + dayValString
+	}
+
 	queryInput := dynamodb.QueryInput{
 		IndexName: aws.String("date-index"),
 		TableName: aws.String("daltamur-LastFMTracks"),
@@ -282,7 +292,7 @@ func filterSingleDay(t *time.Time, writer http.ResponseWriter) {
 				ComparisonOperator: aws.String("EQ"),
 				AttributeValueList: []*dynamodb.AttributeValue{
 					{
-						S: aws.String(strconv.Itoa(int((*t).Month())) + "/" + strconv.Itoa((*t).Day()) + "/" + year[len(year)-2:]),
+						S: aws.String(monthString + "/" + dayValString + "/" + year[len(year)-2:]),
 					},
 				},
 			},
@@ -481,7 +491,7 @@ func filterTwoDays(t *time.Time, t2 *time.Time, writer http.ResponseWriter) {
 		var dayValue = *currentDay
 		go func() {
 			defer wg.Done()
-			fmt.Println(curMonthVal + "/" + curDayVal + "/" + curYear)
+			//fmt.Println(curMonthVal + "/" + curDayVal + "/" + curYear)
 			dayMap.Set(curMonthVal+"/"+curDayVal+"/"+curYear, getSingleDayVals(dayValue))
 		}()
 		*currentDay = (*currentDay).AddDate(0, 0, 1)
