@@ -7,6 +7,7 @@ require (
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
 	github.com/jamespearly/loggly v0.0.0-20220929110912-1d839b0715fa
+	github.com/orcaman/concurrent-map/v2 v2.0.0
 )
 
 require (

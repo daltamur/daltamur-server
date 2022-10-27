@@ -1,5 +1,13 @@
 package main
 
+type SongRange struct {
+	AllSongs map[string]DaySongs `json:"AllSongs"`
+}
+
+type DaySongs struct {
+	Songs []SongData `json:"songs"`
+}
+
 type Status struct {
 	Table       string `json:"table"`
 	RecordCount int64  `json:"recordCount"`

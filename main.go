@@ -9,11 +9,13 @@ import (
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/jamespearly/loggly"
+	cmap "github.com/orcaman/concurrent-map/v2"
 	"log"
 	"net/http"
 	"regexp"
 	"sort"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -42,7 +44,7 @@ func main() {
 func convertToSongsStructScan(output *dynamodb.ScanOutput) Songs {
 	/*
 		Somehow some songs got through with null image references rather than
-		going to the default image I set if no artist or track image exists. So a little bit of ducttape
+		going to the default image I set if no artist or track image exists. So a bit of duct tape
 		was applied in this function so no nil references get passed and the program breaks
 	*/
 	var songs Songs
@@ -116,10 +118,86 @@ func convertToSongsStructScan(output *dynamodb.ScanOutput) Songs {
 	return songs
 }
 
+func convertToDaySongsStruct(output *dynamodb.QueryOutput) DaySongs {
+	/*
+		Somehow some songs got through with null image references rather than
+		going to the default image I set if no artist or track image exists. So a bit of duct tape
+		was applied in this function so no nil references get passed and the program breaks
+	*/
+	var songs DaySongs
+	for i := range output.Items {
+		var images []Image
+		for x := range output.Items[i]["artist-image"].L {
+			var curImage Image
+			if ((*output).Items[i]["artist-image"].L[x].M["size"].NULL) == nil {
+				curImage.Size = *((*output).Items[i]["artist-image"].L[x].M["size"].S)
+			} else {
+				//one final check to make sure it isn't true
+				if *((*output).Items[i]["artist-image"].L[x].M["size"].NULL) != true {
+					curImage.Size = *((*output).Items[i]["artist-image"].L[x].M["size"].S)
+				}
+			}
+
+			if ((*output).Items[i]["artist-image"].L[x].M["#text"].NULL) == nil {
+				curImage.Text = *((*output).Items[i]["artist-image"].L[x].M["#text"].S)
+			} else {
+				//one final check to make sure it isn't true
+				if *((*output).Items[i]["artist-image"].L[x].M["#text"].NULL) != true {
+					curImage.Text = *((*output).Items[i]["artist-image"].L[x].M["size"].S)
+				}
+			}
+			images = append(images, curImage)
+		}
+
+		var albumImages []Image
+
+		for x := range output.Items[i]["track-image"].L {
+			var curImage Image
+			if ((*output).Items[i]["track-image"].L[x].M["size"].NULL) == nil {
+				curImage.Size = *((*output).Items[i]["track-image"].L[x].M["size"].S)
+			} else {
+				//one final check to make sure it isn't true
+				if *((*output).Items[i]["track-image"].L[x].M["size"].NULL) != true {
+					curImage.Size = *((*output).Items[i]["track-image"].L[x].M["size"].S)
+				}
+			}
+
+			if ((*output).Items[i]["track-image"].L[x].M["#text"].NULL) == nil {
+				curImage.Text = *((*output).Items[i]["track-image"].L[x].M["#text"].S)
+			} else {
+				//one final check to make sure it isn't true
+				if *((*output).Items[i]["track-image"].L[x].M["#text"].NULL) != true {
+					curImage.Text = *((*output).Items[i]["track-image"].L[x].M["size"].S)
+				}
+			}
+			albumImages = append(albumImages, curImage)
+		}
+
+		uts, _ := strconv.Atoi(*output.Items[i]["uts-time"].N)
+
+		songStruct := SongData{
+			Artist:       *output.Items[i]["artist"].S,
+			Album:        *output.Items[i]["album"].S,
+			ArtistImages: images,
+			AlbumImages:  albumImages,
+			Date:         *output.Items[i]["date"].S,
+			Name:         *output.Items[i]["track"].S,
+			Time:         *output.Items[i]["EST-time"].S,
+			UTS:          uts,
+		}
+
+		songs.Songs = append(songs.Songs, songStruct)
+	}
+	sort.Slice(songs.Songs, func(i, j int) bool {
+		return songs.Songs[i].UTS > songs.Songs[j].UTS
+	})
+	return songs
+}
+
 func convertToSongsStruct(output *dynamodb.QueryOutput) Songs {
 	/*
 		Somehow some songs got through with null image references rather than
-		going to the default image I set if no artist or track image exists. So a little bit of ducttape
+		going to the default image I set if no artist or track image exists. So a bit of duct tape
 		was applied in this function so no nil references get passed and the program breaks
 	*/
 	var songs Songs
@@ -235,6 +313,8 @@ func RangeHandler(writer http.ResponseWriter, request *http.Request) {
 		//do the filtering here
 		fmt.Println("ZONE : ", location, " Time : ", (*timePointer).In(location).Unix())
 		filterSingleDay(timePointer, writer)
+		msgVal := "200: " + request.RemoteAddr + " used " + request.Method + " on path " + request.RequestURI + " at " + time.Now().String()
+		sendLogglyCommand("info", msgVal)
 
 	case 1:
 		if request.URL.Query().Get("startDate") != "" {
@@ -259,8 +339,8 @@ func RangeHandler(writer http.ResponseWriter, request *http.Request) {
 						return
 					}
 				} else {
-					endTime := startTime.AddDate(0, 0, 1)
 					//make sure that the desired date is not greater than the date right now
+					//endTime := startTime.AddDate(0, 0, 25)
 					if startTime.Unix() > time.Now().In(location).Unix() {
 						errorVal := "404 Error: " + request.RemoteAddr + " used " + request.Method + " on path " + request.RequestURI + " with invalid date at " + time.Now().String()
 						sendLogglyCommand("error", errorVal)
@@ -273,8 +353,9 @@ func RangeHandler(writer http.ResponseWriter, request *http.Request) {
 					} else {
 						//finally do the scan of the database here
 						//do this tmrrw
-						fmt.Println(startTime.In(location))
-						fmt.Println(endTime.In(location))
+						filterSingleDay(&startTime, writer)
+						msgVal := "200: " + request.RemoteAddr + " used " + request.Method + " on path " + request.RequestURI + " at " + time.Now().String()
+						sendLogglyCommand("info", msgVal)
 					}
 				}
 			} else {
@@ -288,7 +369,7 @@ func RangeHandler(writer http.ResponseWriter, request *http.Request) {
 				}
 			}
 		} else {
-			errorVal := "404 Error: " + request.RemoteAddr + " used " + request.Method + " on path " + request.RequestURI + " with wrong query param " + time.Now().String()
+			errorVal := "404 Error: " + request.RemoteAddr + " used " + request.Method + " on path " + request.RequestURI + " with wrong query params " + time.Now().String()
 			sendLogglyCommand("error", errorVal)
 			requestError := Songs{Error: errorVal}
 			jsonBytes, _ := json.Marshal(requestError)
@@ -299,7 +380,56 @@ func RangeHandler(writer http.ResponseWriter, request *http.Request) {
 		}
 
 	case 2:
-		//do this tmrrw too
+		//make sure the start and end date are both defined
+		if request.URL.Query().Get("startDate") != "" || request.URL.Query().Get("endDate") != "" {
+			//now make sure the start and end date are both well defined
+			slashRegex := regexp.MustCompile("/")
+			layout := "01/02/2006 3:04:05 PM"
+			location, _ := time.LoadLocation("America/New_York")
+			//break the date into the separate parts
+			dateArray := slashRegex.Split(request.URL.Query().Get("startDate"), -1)
+			startTime, err1 := time.ParseInLocation(layout, dateArray[0]+"/"+dateArray[1]+"/"+dateArray[2]+" 0:00:00 AM", location)
+			dateArray = slashRegex.Split(request.URL.Query().Get("endDate"), -1)
+			endTime, err2 := time.ParseInLocation(layout, dateArray[0]+"/"+dateArray[1]+"/"+dateArray[2]+" 0:00:00 AM", location)
+			endTime = endTime.AddDate(0, 0, 1)
+			if err1 != nil || err2 != nil {
+				errorVal := "404 Error: " + request.RemoteAddr + " used " + request.Method + " on path " + request.RequestURI + " with an ill-formed date at " + time.Now().String()
+				sendLogglyCommand("error", errorVal)
+				requestError := Songs{Error: errorVal}
+				jsonBytes, _ := json.Marshal(requestError)
+				_, err := writer.Write(jsonBytes)
+				if err != nil {
+					return
+				}
+			} else {
+				//make sure the start date is not greater than the end date
+				if startTime.Unix() > endTime.Unix() {
+					errorVal := "404 Error: " + request.RemoteAddr + " used " + request.Method + " on path " + request.RequestURI + " with invalid date at " + time.Now().String()
+					sendLogglyCommand("error", errorVal)
+					requestError := Songs{Error: errorVal}
+					jsonBytes, _ := json.Marshal(requestError)
+					_, err := writer.Write(jsonBytes)
+					if err != nil {
+						return
+					}
+				} else {
+					//now do the call
+					filterTwoDays(&startTime, &endTime, writer)
+					msgVal := "200: " + request.RemoteAddr + " used " + request.Method + " on path " + request.RequestURI + " at " + time.Now().String()
+					sendLogglyCommand("info", msgVal)
+				}
+			}
+
+		} else {
+			errorVal := "404 Error: " + request.RemoteAddr + " used " + request.Method + " on path " + request.RequestURI + " with wrong query params " + time.Now().String()
+			sendLogglyCommand("error", errorVal)
+			requestError := Songs{Error: errorVal}
+			jsonBytes, _ := json.Marshal(requestError)
+			_, err := writer.Write(jsonBytes)
+			if err != nil {
+				return
+			}
+		}
 
 	default:
 		errorVal := "404 Error: " + request.RemoteAddr + " used " + request.Method + " on path " + request.RequestURI + " with invalid amount of query params at " + time.Now().String()
@@ -313,6 +443,103 @@ func RangeHandler(writer http.ResponseWriter, request *http.Request) {
 
 	}
 
+}
+
+type DirRange []int64
+
+func (a DirRange) Len() int           { return len(a) }
+func (a DirRange) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a DirRange) Less(i, j int) bool { return a[i] < a[j] }
+
+/*
+Using the filter function from DynamoDB is just way too slow to get quality results. Instead, we're going to scan every day in parallel and put them in a concurrent map
+
+*/
+
+func filterTwoDays(t *time.Time, t2 *time.Time, writer http.ResponseWriter) {
+	//set the db and filter up
+	var wg sync.WaitGroup
+	var currentDay *time.Time
+	currentDay = t
+	dayMap := cmap.New[DaySongs]()
+	for !(*currentDay).Equal(*t2) {
+		wg.Add(1)
+		monthString := strconv.Itoa(int((*currentDay).Month()))
+		if len(monthString) == 1 {
+			monthString = "0" + monthString
+		}
+
+		dayValString := strconv.Itoa((*currentDay).Day())
+		if len(dayValString) == 1 {
+			dayValString = "0" + dayValString
+		}
+
+		yearString := strconv.Itoa((*currentDay).Year())
+		var curDayVal = dayValString
+		var curMonthVal = monthString
+		var curYear = yearString
+		var dayValue = *currentDay
+		go func() {
+			defer wg.Done()
+			fmt.Println(curMonthVal + "/" + curDayVal + "/" + curYear)
+			dayMap.Set(curMonthVal+"/"+curDayVal+"/"+curYear, getSingleDayVals(dayValue))
+		}()
+		*currentDay = (*currentDay).AddDate(0, 0, 1)
+	}
+	wg.Wait()
+	allSongs := SongRange{AllSongs: dayMap.Items()}
+
+	keys := make([]string, 0, len(allSongs.AllSongs))
+
+	for k := range allSongs.AllSongs {
+		keys = append(keys, k)
+	}
+
+	for _, k := range keys {
+		if (allSongs.AllSongs[k]).Songs == nil {
+			delete(allSongs.AllSongs, k)
+		}
+	}
+
+	jsonBytes, _ := json.Marshal(allSongs)
+
+	_, err := writer.Write(jsonBytes)
+	if err != nil {
+		return
+	}
+
+}
+
+func getSingleDayVals(t time.Time) DaySongs {
+	svc := setDBInstance()
+	year := strconv.Itoa((t).Year())
+	monthString := strconv.Itoa(int((t).Month()))
+	if len(monthString) == 1 {
+		monthString = "0" + monthString
+	}
+
+	dayValString := strconv.Itoa((t).Day())
+	if len(dayValString) == 1 {
+		dayValString = "0" + dayValString
+	}
+	queryInput := dynamodb.QueryInput{
+		IndexName: aws.String("date-index"),
+		TableName: aws.String("daltamur-LastFMTracks"),
+		KeyConditions: map[string]*dynamodb.Condition{
+			"date": {
+				ComparisonOperator: aws.String("EQ"),
+				AttributeValueList: []*dynamodb.AttributeValue{
+					{
+						S: aws.String(monthString + "/" + dayValString + "/" + year[len(year)-2:]),
+					},
+				},
+			},
+		},
+	}
+
+	returnedVal, _ := svc.Query(&queryInput)
+	songs := convertToDaySongsStruct(returnedVal)
+	return songs
 }
 
 func AllHandler(writer http.ResponseWriter, request *http.Request) {
@@ -359,9 +586,9 @@ func AllHandler(writer http.ResponseWriter, request *http.Request) {
 }
 
 func writePageSizeError(writer http.ResponseWriter, index string) {
-	error := "404 Error: Page Index " + index + " is not an integer."
-	sendLogglyCommand("error", error)
-	bytes, _ := json.Marshal(Songs{Error: error})
+	errorVal := "404 Error: Page Index " + index + " is not an integer."
+	sendLogglyCommand("error", errorVal)
+	bytes, _ := json.Marshal(Songs{Error: errorVal})
 	writer.Write(bytes)
 }
 
