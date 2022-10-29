@@ -25,7 +25,7 @@ func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/daltamur/status", StatusHandler).Methods("GET")
 	r.HandleFunc("/daltamur/all", AllHandler).Methods("GET")
-	r.HandleFunc("/daltamur/select", RangeHandler).Methods("GET")
+	r.HandleFunc("/daltamur/search", RangeHandler).Methods("GET")
 	r.HandleFunc("/{path:.+}", ErrorHandler)
 	r.Methods("POST", "PUT", "PATCH", "DELETE").HandlerFunc(ErrorHandler)
 	http.Handle("/", r)
@@ -662,15 +662,16 @@ func ErrorHandler(writer http.ResponseWriter, request *http.Request) {
 }
 
 func StatusHandler(writer http.ResponseWriter, request *http.Request) {
-	sendTableData(writer)
 	switch len(request.URL.Query()) {
 	case 0:
+		sendTableData(writer)
 		msgVal := "200: " + request.RemoteAddr + " used " + request.Method + " on path " + request.RequestURI + " at " + time.Now().String()
 		sendLogglyCommand("info", msgVal)
 
 	default:
-		msgVal := "404 Error: " + request.RemoteAddr + " used " + request.Method + " on path " + request.RequestURI + " with too many query params at " + time.Now().String()
-		sendLogglyCommand("info", msgVal)
+		errorVal := "404 Error: " + request.RemoteAddr + " used " + request.Method + " on path " + request.RequestURI + " with too many query params " + time.Now().String()
+		writer.Write([]byte(errorVal))
+		sendLogglyCommand("error", errorVal)
 
 	}
 }
