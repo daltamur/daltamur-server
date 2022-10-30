@@ -618,7 +618,7 @@ func sendAllTableData(writer http.ResponseWriter, page int) {
 	svc := setDBInstance()
 	numOfPages := getNumOfPages(svc)
 	//if the requested entry is larger than the number of pages we have
-	if int64(page) > numOfPages {
+	if int64(page) > numOfPages || int64(page) < 0 {
 		errorVal := "404 Error: Index " + strconv.Itoa(page) + " out of bounds for length " + strconv.Itoa(int(numOfPages))
 		sendLogglyCommand("error", errorVal)
 		requestError := Songs{Error: errorVal}
