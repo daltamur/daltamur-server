@@ -316,7 +316,20 @@ func RangeHandler(writer http.ResponseWriter, request *http.Request) {
 		layout := "01/02/2006 3:04:05 PM"
 		location, err := time.LoadLocation("America/New_York")
 		var timePointer = new(time.Time)
-		*timePointer, err = time.ParseInLocation(layout, strconv.Itoa(int(time.Now().In(location).Month()))+"/"+strconv.Itoa(time.Now().In(location).Day())+"/"+strconv.Itoa(time.Now().In(location).Year())+" 0:00:00 AM", location)
+
+		month := strconv.Itoa(int(time.Now().In(location).Month()))
+		if len(month) == 1 {
+			month = "0" + month
+		}
+
+		day := strconv.Itoa(int(time.Now().In(location).Day()))
+		if len(day) == 1 {
+			day = "0" + day
+		}
+
+		year := strconv.Itoa(time.Now().In(location).Year())
+		
+		*timePointer, err = time.ParseInLocation(layout, month+"/"+day+"/"+year+" 0:00:00 AM", location)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -393,28 +406,19 @@ func RangeHandler(writer http.ResponseWriter, request *http.Request) {
 		//make sure the start and end date are both defined
 		if request.URL.Query().Get("startDate") != "" || request.URL.Query().Get("endDate") != "" {
 			//now make sure the start and end date are both well defined
-			slashRegex := regexp.MustCompile("/")
-			layout := "01/02/2006 3:04:05 PM"
-			location, _ := time.LoadLocation("America/New_York")
-			//break the date into the separate parts
-			dateArray := slashRegex.Split(request.URL.Query().Get("startDate"), -1)
-			startTime, err1 := time.ParseInLocation(layout, dateArray[0]+"/"+dateArray[1]+"/"+dateArray[2]+" 0:00:00 AM", location)
-			dateArray = slashRegex.Split(request.URL.Query().Get("endDate"), -1)
-			endTime, err2 := time.ParseInLocation(layout, dateArray[0]+"/"+dateArray[1]+"/"+dateArray[2]+" 0:00:00 AM", location)
-			endTime = endTime.AddDate(0, 0, 1)
-			if err1 != nil || err2 != nil {
-				errorVal := "404 Error: " + request.RemoteAddr + " used " + request.Method + " on path " + request.RequestURI + " with an ill-formed date at " + time.Now().String()
-				sendLogglyCommand("error", errorVal)
-				requestError := Songs{Error: errorVal}
-				jsonBytes, _ := json.Marshal(requestError)
-				_, err := writer.Write(jsonBytes)
-				if err != nil {
-					return
-				}
-			} else {
-				//make sure the start date is not greater than the end date
-				if startTime.Unix() > endTime.Unix() {
-					errorVal := "404 Error: " + request.RemoteAddr + " used " + request.Method + " on path " + request.RequestURI + " with invalid date at " + time.Now().String()
+			r, _ := regexp.Compile("\\b\\d\\d/\\d\\d/\\d\\d\\d\\d\\b")
+			if r.MatchString(request.URL.Query().Get("startDate")) && r.MatchString(request.URL.Query().Get("endDate")) {
+				slashRegex := regexp.MustCompile("/")
+				layout := "01/02/2006 3:04:05 PM"
+				location, _ := time.LoadLocation("America/New_York")
+				//break the date into the separate parts
+				dateArray := slashRegex.Split(request.URL.Query().Get("startDate"), -1)
+				startTime, err1 := time.ParseInLocation(layout, dateArray[0]+"/"+dateArray[1]+"/"+dateArray[2]+" 0:00:00 AM", location)
+				dateArray = slashRegex.Split(request.URL.Query().Get("endDate"), -1)
+				endTime, err2 := time.ParseInLocation(layout, dateArray[0]+"/"+dateArray[1]+"/"+dateArray[2]+" 0:00:00 AM", location)
+				endTime = endTime.AddDate(0, 0, 1)
+				if err1 != nil || err2 != nil {
+					errorVal := "404 Error: " + request.RemoteAddr + " used " + request.Method + " on path " + request.RequestURI + " with an ill-formed date at " + time.Now().String()
 					sendLogglyCommand("error", errorVal)
 					requestError := Songs{Error: errorVal}
 					jsonBytes, _ := json.Marshal(requestError)
@@ -423,10 +427,31 @@ func RangeHandler(writer http.ResponseWriter, request *http.Request) {
 						return
 					}
 				} else {
-					//now do the call
-					filterTwoDays(&startTime, &endTime, writer)
-					msgVal := "200: " + request.RemoteAddr + " used " + request.Method + " on path " + request.RequestURI + " at " + time.Now().String()
-					sendLogglyCommand("info", msgVal)
+					//make sure the start date is not greater than the end date
+					if startTime.Unix() > endTime.Unix() || startTime.Unix() > time.Now().In(location).Unix() || endTime.Unix() > time.Now().In(location).Unix() {
+						errorVal := "404 Error: " + request.RemoteAddr + " used " + request.Method + " on path " + request.RequestURI + " with invalid date at " + time.Now().String()
+						sendLogglyCommand("error", errorVal)
+						requestError := Songs{Error: errorVal}
+						jsonBytes, _ := json.Marshal(requestError)
+						_, err := writer.Write(jsonBytes)
+						if err != nil {
+							return
+						}
+					} else {
+						//now do the call
+						filterTwoDays(&startTime, &endTime, writer)
+						msgVal := "200: " + request.RemoteAddr + " used " + request.Method + " on path " + request.RequestURI + " at " + time.Now().String()
+						sendLogglyCommand("info", msgVal)
+					}
+				}
+			} else {
+				errorVal := "404 Error: " + request.RemoteAddr + " used " + request.Method + " on path " + request.RequestURI + " with invalid date format " + time.Now().String()
+				sendLogglyCommand("error", errorVal)
+				requestError := Songs{Error: errorVal}
+				jsonBytes, _ := json.Marshal(requestError)
+				_, err := writer.Write(jsonBytes)
+				if err != nil {
+					return
 				}
 			}
 
