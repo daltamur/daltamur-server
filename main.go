@@ -554,6 +554,7 @@ func filterTwoDays(t *time.Time, t2 *time.Time, writer http.ResponseWriter) {
 	}
 	jsonBytes = nil
 	keys = nil
+	dayMap.Clear()
 	dayMap = nil
 	allSongs.AllSongs = nil
 	allSongs = SongRange{}
@@ -588,10 +589,6 @@ func getSingleDayVals(t time.Time) DaySongs {
 
 	returnedVal, _ := svc.Query(&queryInput)
 	songs := convertToDaySongsStruct(returnedVal)
-	defer func(songs DaySongs) {
-		songs.Songs = nil
-		songs = DaySongs{}
-	}(songs)
 	returnedVal.Count = nil
 	returnedVal.ConsumedCapacity = nil
 	returnedVal.Items = nil
