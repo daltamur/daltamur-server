@@ -578,6 +578,7 @@ func getSingleDayVals(t time.Time) DaySongs {
 
 	returnedVal, _ := svc.Query(&queryInput)
 	songs := convertToDaySongsStruct(returnedVal)
+	returnedVal = nil
 	return songs
 }
 
