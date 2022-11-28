@@ -133,8 +133,9 @@ func convertToDaySongsStruct(output *dynamodb.QueryOutput) DaySongs {
 		was applied in this function so no nil references get passed and the program breaks
 	*/
 	var songs DaySongs
+	songs.Songs = make([]SongData, len(output.Items))
 	for i := range output.Items {
-		var images []Image
+		images := make([]Image, len(output.Items[i]["artist-image"].L))
 		for x := range output.Items[i]["artist-image"].L {
 			var curImage Image
 			if ((*output).Items[i]["artist-image"].L[x].M["size"].NULL) == nil {
@@ -157,8 +158,7 @@ func convertToDaySongsStruct(output *dynamodb.QueryOutput) DaySongs {
 			images = append(images, curImage)
 		}
 
-		var albumImages []Image
-
+		albumImages := make([]Image, len(output.Items[i]["track-image"].L))
 		for x := range output.Items[i]["track-image"].L {
 			var curImage Image
 			if ((*output).Items[i]["track-image"].L[x].M["size"].NULL) == nil {
