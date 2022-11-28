@@ -199,6 +199,10 @@ func convertToDaySongsStruct(output *dynamodb.QueryOutput) DaySongs {
 	sort.Slice(songs.Songs, func(i, j int) bool {
 		return songs.Songs[i].UTS > songs.Songs[j].UTS
 	})
+	defer func(songs DaySongs) {
+		songs.Songs = nil
+		songs = DaySongs{}
+	}(songs)
 	return songs
 }
 
