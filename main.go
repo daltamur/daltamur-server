@@ -193,11 +193,12 @@ func convertToDaySongsStruct(output *dynamodb.QueryOutput) DaySongs {
 			Time:         *output.Items[i]["EST-time"].S,
 			UTS:          uts,
 		}
+
 		songs.Songs = append(songs.Songs, songStruct)
 	}
-	//sort.Slice(songs.Songs, func(i, j int) bool {
-	//	return songs.Songs[i].UTS > songs.Songs[j].UTS
-	//})
+	sort.Slice(songs.Songs, func(i, j int) bool {
+		return songs.Songs[i].UTS > songs.Songs[j].UTS
+	})
 	return songs
 }
 
@@ -586,6 +587,10 @@ func getSingleDayVals(t time.Time) DaySongs {
 
 	returnedVal, _ := svc.Query(&queryInput)
 	songs := convertToDaySongsStruct(returnedVal)
+	defer func(songs DaySongs) {
+		songs.Songs = nil
+		songs = DaySongs{}
+	}(songs)
 	returnedVal.Count = nil
 	returnedVal.ConsumedCapacity = nil
 	returnedVal.Items = nil
