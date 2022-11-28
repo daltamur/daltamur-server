@@ -306,7 +306,8 @@ func filterSingleDay(t *time.Time, writer http.ResponseWriter) {
 	if err != nil {
 		return
 	}
-
+	jsonBytes = nil
+	songs = Songs{}
 	//end it off with a loggly message
 }
 
@@ -405,7 +406,7 @@ func RangeHandler(writer http.ResponseWriter, request *http.Request) {
 	case 2:
 		//make sure the start and end date are both defined
 		if request.URL.Query().Get("startDate") != "" || request.URL.Query().Get("endDate") != "" {
-			//now make sure the start and end date are both well defined
+			//now make sure the start and end date are both well-defined
 			r, _ := regexp.Compile("\\b\\d\\d/\\d\\d/\\d\\d\\d\\d\\b")
 			if r.MatchString(request.URL.Query().Get("startDate")) && r.MatchString(request.URL.Query().Get("endDate")) {
 				slashRegex := regexp.MustCompile("/")
@@ -543,8 +544,9 @@ func filterTwoDays(t *time.Time, t2 *time.Time, writer http.ResponseWriter) {
 		return
 	}
 	jsonBytes = nil
-	allSongs.AllSongs = nil
 	keys = nil
+	dayMap = nil
+	allSongs = SongRange{}
 }
 
 func getSingleDayVals(t time.Time) DaySongs {
@@ -673,6 +675,8 @@ func sendAllTableData(writer http.ResponseWriter, page int) {
 					if err != nil {
 						return false
 					}
+					songs = Songs{}
+					jsonBytes = nil
 					foundPage = false
 				}
 				pageNum++
