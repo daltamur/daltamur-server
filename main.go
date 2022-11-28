@@ -27,11 +27,17 @@ func main() {
 	r.HandleFunc("/daltamur/status", StatusHandler).Methods("GET")
 	r.HandleFunc("/daltamur/all", AllHandler).Methods("GET")
 	r.HandleFunc("/daltamur/search", RangeHandler).Methods("GET")
-	r.HandleFunc("daltamur/debug/pprof", pprof.Index)
+	r.HandleFunc("/daltamur/debug/pprof/", pprof.Index)
+	r.HandleFunc("/daltamur/debug/pprof/cmdline", pprof.Cmdline)
+	r.HandleFunc("/daltamur/debug/pprof/profile", pprof.Profile)
+	r.HandleFunc("/daltamur/debug/pprof/symbol", pprof.Symbol)
+	r.Handle("/daltamur/debug/pprof/goroutine", pprof.Handler("goroutine"))
+	r.Handle("/daltamur/debug/pprof/heap", pprof.Handler("heap"))
+	r.Handle("/daltamur/debug/pprof/threadcreate", pprof.Handler("threadcreate"))
+	r.Handle("/daltamur/debug/pprof/block", pprof.Handler("block"))
 	r.HandleFunc("/{path:.+}", ErrorHandler)
 	r.Methods("POST", "PUT", "PATCH", "DELETE").HandlerFunc(ErrorHandler)
 	http.Handle("/", r)
-
 	acceptedMethods := handlers.AllowedMethods([]string{"GET"})
 	srv := &http.Server{
 		Handler:      handlers.CORS(acceptedMethods)(r),
