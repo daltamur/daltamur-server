@@ -155,7 +155,7 @@ func convertToDaySongsStruct(output *dynamodb.QueryOutput) DaySongs {
 					curImage.Text = *((*output).Items[i]["artist-image"].L[x].M["size"].S)
 				}
 			}
-			images = append(images, curImage)
+			images[x] = curImage
 		}
 
 		albumImages := make([]Image, len(output.Items[i]["track-image"].L))
@@ -178,7 +178,7 @@ func convertToDaySongsStruct(output *dynamodb.QueryOutput) DaySongs {
 					curImage.Text = *((*output).Items[i]["track-image"].L[x].M["size"].S)
 				}
 			}
-			albumImages = append(albumImages, curImage)
+			albumImages[x] = curImage
 		}
 
 		uts, _ := strconv.Atoi(*output.Items[i]["uts-time"].N)
@@ -194,7 +194,7 @@ func convertToDaySongsStruct(output *dynamodb.QueryOutput) DaySongs {
 			UTS:          uts,
 		}
 
-		songs.Songs = append(songs.Songs, songStruct)
+		songs.Songs[i] = songStruct
 	}
 	sort.Slice(songs.Songs, func(i, j int) bool {
 		return songs.Songs[i].UTS > songs.Songs[j].UTS
