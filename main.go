@@ -12,6 +12,7 @@ import (
 	cmap "github.com/orcaman/concurrent-map/v2"
 	"log"
 	"net/http"
+	"net/http/pprof"
 	"regexp"
 	"sort"
 	"strconv"
@@ -26,6 +27,7 @@ func main() {
 	r.HandleFunc("/daltamur/status", StatusHandler).Methods("GET")
 	r.HandleFunc("/daltamur/all", AllHandler).Methods("GET")
 	r.HandleFunc("/daltamur/search", RangeHandler).Methods("GET")
+	r.HandleFunc("daltamur/debug/pprof/", pprof.Index)
 	r.HandleFunc("/{path:.+}", ErrorHandler)
 	r.Methods("POST", "PUT", "PATCH", "DELETE").HandlerFunc(ErrorHandler)
 	http.Handle("/", r)
