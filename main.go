@@ -328,7 +328,7 @@ func RangeHandler(writer http.ResponseWriter, request *http.Request) {
 		}
 
 		year := strconv.Itoa(time.Now().In(location).Year())
-		
+
 		*timePointer, err = time.ParseInLocation(layout, month+"/"+day+"/"+year+" 0:00:00 AM", location)
 		if err != nil {
 			fmt.Println(err)
@@ -542,7 +542,9 @@ func filterTwoDays(t *time.Time, t2 *time.Time, writer http.ResponseWriter) {
 	if err != nil {
 		return
 	}
-
+	jsonBytes = nil
+	allSongs.AllSongs = nil
+	keys = nil
 }
 
 func getSingleDayVals(t time.Time) DaySongs {
