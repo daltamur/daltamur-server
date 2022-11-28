@@ -199,10 +199,7 @@ func convertToDaySongsStruct(output *dynamodb.QueryOutput) DaySongs {
 	sort.Slice(songs.Songs, func(i, j int) bool {
 		return songs.Songs[i].UTS > songs.Songs[j].UTS
 	})
-	defer func(songs DaySongs) {
-		songs.Songs = nil
-		songs = DaySongs{}
-	}(songs)
+
 	return songs
 }
 
@@ -527,14 +524,14 @@ func filterTwoDays(t *time.Time, t2 *time.Time, writer http.ResponseWriter) {
 		var curMonthVal = monthString
 		var curYear = yearString
 		var dayValue = *currentDay
-		go func() {
-			defer wg.Done()
-			//fmt.Println(curMonthVal + "/" + curDayVal + "/" + curYear)
-			dayMap.Set(curMonthVal+"/"+curDayVal+"/"+curYear, getSingleDayVals(dayValue))
-		}()
+		//go func() {
+		//	defer wg.Done()
+		//fmt.Println(curMonthVal + "/" + curDayVal + "/" + curYear)
+		dayMap.Set(curMonthVal+"/"+curDayVal+"/"+curYear, getSingleDayVals(dayValue))
+		//}()
 		*currentDay = (*currentDay).AddDate(0, 0, 1)
 	}
-	wg.Wait()
+	//wg.Wait()
 	allSongs := SongRange{AllSongs: dayMap.Items()}
 
 	keys := make([]string, 0, len(allSongs.AllSongs))
