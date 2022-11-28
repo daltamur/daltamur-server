@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"net/http/pprof"
 	"regexp"
+	"runtime/debug"
 	"sort"
 	"strconv"
 	"sync"
@@ -487,6 +488,7 @@ func RangeHandler(writer http.ResponseWriter, request *http.Request) {
 		}
 
 	}
+	debug.FreeOSMemory()
 
 }
 
@@ -558,6 +560,7 @@ func filterTwoDays(t *time.Time, t2 *time.Time, writer http.ResponseWriter) {
 	dayMap = nil
 	allSongs.AllSongs = nil
 	allSongs = SongRange{}
+	debug.FreeOSMemory()
 }
 
 func getSingleDayVals(t time.Time) DaySongs {
@@ -639,6 +642,7 @@ func AllHandler(writer http.ResponseWriter, request *http.Request) {
 		}
 
 	}
+	debug.FreeOSMemory()
 }
 
 func writePageSizeError(writer http.ResponseWriter, index string) {
