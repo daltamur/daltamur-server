@@ -134,7 +134,16 @@ func convertToDaySongsStruct(output *dynamodb.QueryOutput) DaySongs {
 		was applied in this function so no nil references get passed and the program breaks
 	*/
 	var songs DaySongs
-	songs.Songs = make([]SongData, len(output.Items))
+
+	var pool = sync.Pool{New: func() interface{} {
+		// length of a sha256 hash
+		x := make([]SongData, len(output.Items))
+		return x
+	},
+	}
+
+	songs.Songs = pool.Get().([]SongData)
+	defer pool.Put(songs.Songs)
 	for i := range output.Items {
 		images := make([]Image, len(output.Items[i]["artist-image"].L))
 		for x := range output.Items[i]["artist-image"].L {
