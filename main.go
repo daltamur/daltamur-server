@@ -23,6 +23,13 @@ import (
 
 //docker run -d -p 33200:8080 daltamur-server
 
+var pool = sync.Pool{New: func() interface{} {
+	// length of a sha256 hash
+	var x []SongData
+	return x
+},
+}
+
 func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/daltamur/status", StatusHandler).Methods("GET")
@@ -135,13 +142,6 @@ func convertToDaySongsStruct(output *dynamodb.QueryOutput) DaySongs {
 	*/
 	var songs DaySongs
 
-	var pool = sync.Pool{New: func() interface{} {
-		// length of a sha256 hash
-		x := make([]SongData, len(output.Items))
-		return x
-	},
-	}
-
 	songs.Songs = pool.Get().([]SongData)
 	defer pool.Put(songs.Songs)
 	for i := range output.Items {
@@ -204,7 +204,7 @@ func convertToDaySongsStruct(output *dynamodb.QueryOutput) DaySongs {
 			UTS:          uts,
 		}
 
-		songs.Songs[i] = songStruct
+		songs.Songs = append(songs.Songs, songStruct)
 	}
 	sort.Slice(songs.Songs, func(i, j int) bool {
 		return songs.Songs[i].UTS > songs.Songs[j].UTS
