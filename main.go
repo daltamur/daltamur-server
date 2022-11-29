@@ -130,7 +130,7 @@ func convertToSongsStructScan(output *dynamodb.ScanOutput) Songs {
 func convertToDaySongsStruct(output *dynamodb.QueryOutput) DaySongs {
 	/*
 		Somehow some songs got through with null image references rather than
-		going to the default image I set if no artist or track image exists. So a bit of duct tape
+		going to the default image I set if no artist or track image exists. So  a bit of duct tape
 		was applied in this function so no nil references get passed and the program breaks
 	*/
 	var songs DaySongs
