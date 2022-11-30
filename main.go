@@ -724,6 +724,8 @@ func setDBInstance() *dynamodb.DynamoDB {
 	// Create DynamoDB client
 	svc := dynamodb.New(sess)
 
+	sess = nil
+
 	return svc
 
 }
