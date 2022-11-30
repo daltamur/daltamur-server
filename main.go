@@ -312,6 +312,7 @@ func filterSingleDay(t *time.Time, writer http.ResponseWriter) {
 	songs := convertToSongsStruct(returnedVal)
 	jsonBytes, _ := json.Marshal(songs)
 	_, err := writer.Write(jsonBytes)
+	svc = nil
 	if err != nil {
 		return
 	}
@@ -641,6 +642,7 @@ func sendAllTableData(writer http.ResponseWriter, page int) {
 		requestError := Songs{Error: errorVal}
 		jsonBytes, _ := json.Marshal(requestError)
 		_, err := writer.Write(jsonBytes)
+		svc = nil
 		if err != nil {
 			return
 		}
@@ -670,6 +672,7 @@ func sendAllTableData(writer http.ResponseWriter, page int) {
 				pageNum++
 				return foundPage
 			})
+		svc = nil
 	}
 
 }
@@ -701,6 +704,7 @@ func sendTableData(writer http.ResponseWriter) {
 	tableStatus := Status{Table: *tableDescription.Table.TableName, RecordCount: *tableDescription.Table.ItemCount, Time: time.Now().String()}
 	jsonBytes, _ := json.Marshal(tableStatus)
 	_, err := writer.Write(jsonBytes)
+	svc = nil
 	if err != nil {
 		return
 	}
