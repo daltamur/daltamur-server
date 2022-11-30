@@ -551,6 +551,7 @@ func filterTwoDays(t *time.Time, t2 *time.Time, writer http.ResponseWriter) {
 
 	jsonBytes = nil
 	allDays = nil
+	debug.FreeOSMemory()
 	runtime.GC()
 }
 
