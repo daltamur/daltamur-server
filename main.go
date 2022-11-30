@@ -545,9 +545,6 @@ func filterTwoDays(t *time.Time, t2 *time.Time, writer http.ResponseWriter) {
 	}
 	jsonBytes, _ := json.Marshal(allDays)
 	_, _ = writer.Write(jsonBytes)
-	for k := range allDays {
-		delete(allDays, k)
-	}
 
 	jsonBytes = nil
 	allDays = nil
