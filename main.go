@@ -528,6 +528,7 @@ func filterTwoDays(t *time.Time, t2 *time.Time, writer http.ResponseWriter) {
 		dayString := curMonthVal + "/" + curDayVal + "/" + curYear
 		jsonBytes, _ := json.Marshal(getSingleDayVals(dayValue, dayString))
 		_, _ = writer.Write(jsonBytes)
+		jsonBytes = nil
 		*currentDay = (*currentDay).AddDate(0, 0, 1)
 	}
 	debug.FreeOSMemory()
