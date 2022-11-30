@@ -5,6 +5,7 @@ type SongRange struct {
 }
 
 type DaySongs struct {
+	Day   string     `json:"day"`
 	Songs []SongData `json:"songs"`
 }
 
