@@ -668,13 +668,15 @@ func sendAllTableData(writer http.ResponseWriter, page int) {
 					songs.CurPage = pageCount
 					jsonBytes, _ := json.Marshal(songs)
 					_, err := writer.Write(jsonBytes)
+					songs = Songs{}
+					jsonBytes = nil
+					output = nil
 					if err != nil {
 						return false
 					}
-					songs = Songs{}
-					jsonBytes = nil
 					foundPage = false
 				}
+				output = nil
 				pageNum++
 				return foundPage
 			})
