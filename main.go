@@ -550,10 +550,7 @@ func filterTwoDays(t *time.Time, t2 *time.Time, writer http.ResponseWriter) {
 
 	jsonBytes, _ := json.Marshal(allSongs)
 
-	_, err := writer.Write(jsonBytes)
-	if err != nil {
-		return
-	}
+	_, _ = writer.Write(jsonBytes)
 	for _, k := range keys {
 		delete(allSongs.AllSongs, k)
 		dayMap.Remove(k)
