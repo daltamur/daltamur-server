@@ -738,6 +738,7 @@ func sendLogglyCommand(msgType string, msg string) {
 	logglyClient := loggly.New("Server-Requests")
 	err := logglyClient.EchoSend(msgType, msg)
 	if err != nil {
+		logglyClient = nil
 		return
 	}
 }
