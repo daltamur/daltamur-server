@@ -567,6 +567,7 @@ func getSingleDayVals(t time.Time, day string) DaySongs {
 	songs := convertToDaySongsStruct(returnedVal)
 	songs.Day = day
 	svc = nil
+	returnedVal = nil
 	return songs
 }
 
