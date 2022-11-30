@@ -9,7 +9,6 @@ import (
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/jamespearly/loggly"
-	cmap "github.com/orcaman/concurrent-map/v2"
 	"log"
 	"net/http"
 	"net/http/pprof"
@@ -508,7 +507,7 @@ func filterTwoDays(t *time.Time, t2 *time.Time, writer http.ResponseWriter) {
 	var wg sync.WaitGroup
 	var currentDay *time.Time
 	currentDay = t
-	dayMap := cmap.New[DaySongs]()
+	//dayMap := cmap.New[DaySongs]()
 	for !(*currentDay).Equal(*t2) {
 		wg.Add(1)
 		monthString := strconv.Itoa(int((*currentDay).Month()))
@@ -521,47 +520,49 @@ func filterTwoDays(t *time.Time, t2 *time.Time, writer http.ResponseWriter) {
 			dayValString = "0" + dayValString
 		}
 
-		yearString := strconv.Itoa((*currentDay).Year())
-		var curDayVal = dayValString
-		var curMonthVal = monthString
-		var curYear = yearString
+		//yearString := strconv.Itoa((*currentDay).Year())
+		//var curDayVal = dayValString
+		//var curMonthVal = monthString
+		//var curYear = yearString
 		var dayValue = *currentDay
 		//go func() {
 		//	defer wg.Done()
 		//fmt.Println(curMonthVal + "/" + curDayVal + "/" + curYear)
-		dayMap.Set(curMonthVal+"/"+curDayVal+"/"+curYear, getSingleDayVals(dayValue))
+		jsonBytes, _ := json.Marshal(getSingleDayVals(dayValue))
+		_, _ = writer.Write(jsonBytes)
+		//dayMap.Set(curMonthVal+"/"+curDayVal+"/"+curYear, getSingleDayVals(dayValue))
 		//}()
 		*currentDay = (*currentDay).AddDate(0, 0, 1)
 	}
 	//wg.Wait()
-	allSongs := SongRange{AllSongs: dayMap.Items()}
-
-	keys := make([]string, 0, len(allSongs.AllSongs))
-
-	for k := range allSongs.AllSongs {
-		keys = append(keys, k)
-	}
-
-	for _, k := range keys {
-		if (allSongs.AllSongs[k]).Songs == nil {
-			delete(allSongs.AllSongs, k)
-		}
-	}
-
-	jsonBytes, _ := json.Marshal(allSongs)
-
-	_, _ = writer.Write(jsonBytes)
-	for _, k := range keys {
-		delete(allSongs.AllSongs, k)
-		dayMap.Remove(k)
-	}
-	jsonBytes = nil
-	keys = nil
-	dayMap.Clear()
-	dayMap = nil
-	allSongs.AllSongs = nil
-	allSongs = SongRange{}
-	debug.FreeOSMemory()
+	//allSongs := SongRange{AllSongs: dayMap.Items()}
+	//
+	//keys := make([]string, 0, len(allSongs.AllSongs))
+	//
+	//for k := range allSongs.AllSongs {
+	//	keys = append(keys, k)
+	//}
+	//
+	//for _, k := range keys {
+	//	if (allSongs.AllSongs[k]).Songs == nil {
+	//		delete(allSongs.AllSongs, k)
+	//	}
+	//}
+	//
+	//jsonBytes, _ := json.Marshal(allSongs)
+	//
+	//_, _ = writer.Write(jsonBytes)
+	//for _, k := range keys {
+	//	delete(allSongs.AllSongs, k)
+	//	dayMap.Remove(k)
+	//}
+	//jsonBytes = nil
+	//keys = nil
+	//dayMap.Clear()
+	//dayMap = nil
+	//allSongs.AllSongs = nil
+	//allSongs = SongRange{}
+	//debug.FreeOSMemory()
 }
 
 func getSingleDayVals(t time.Time) DaySongs {
