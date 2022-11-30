@@ -310,6 +310,7 @@ func filterSingleDay(t *time.Time, writer http.ResponseWriter) {
 
 	returnedVal, _ := svc.Query(&queryInput)
 	songs := convertToSongsStruct(returnedVal)
+	returnedVal = nil
 	jsonBytes, _ := json.Marshal(songs)
 	_, err := writer.Write(jsonBytes)
 	svc = nil
@@ -402,6 +403,7 @@ func RangeHandler(writer http.ResponseWriter, request *http.Request) {
 					return
 				}
 			}
+			r = nil
 		} else {
 			errorVal := "404 Error: " + request.RemoteAddr + " used " + request.Method + " on path " + request.RequestURI + " with wrong query params " + time.Now().String()
 			sendLogglyCommand("error", errorVal)
@@ -465,6 +467,7 @@ func RangeHandler(writer http.ResponseWriter, request *http.Request) {
 					return
 				}
 			}
+			r = nil
 
 		} else {
 			errorVal := "404 Error: " + request.RemoteAddr + " used " + request.Method + " on path " + request.RequestURI + " with wrong query params " + time.Now().String()
@@ -706,6 +709,7 @@ func sendTableData(writer http.ResponseWriter) {
 	jsonBytes, _ := json.Marshal(tableStatus)
 	_, err := writer.Write(jsonBytes)
 	svc = nil
+	tableDescription = nil
 	if err != nil {
 		return
 	}
