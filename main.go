@@ -530,6 +530,7 @@ func filterTwoDays(t *time.Time, t2 *time.Time, writer http.ResponseWriter) {
 		_, _ = writer.Write(jsonBytes)
 		*currentDay = (*currentDay).AddDate(0, 0, 1)
 	}
+	debug.FreeOSMemory()
 }
 
 func getSingleDayVals(t time.Time, day string) DaySongs {
@@ -608,7 +609,6 @@ func AllHandler(writer http.ResponseWriter, request *http.Request) {
 		}
 
 	}
-	debug.FreeOSMemory()
 }
 
 func writePageSizeError(writer http.ResponseWriter, index string) {
