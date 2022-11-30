@@ -357,6 +357,7 @@ func RangeHandler(writer http.ResponseWriter, request *http.Request) {
 			r, _ := regexp.Compile("\\b\\d\\d/\\d\\d/\\d\\d\\d\\d\\b")
 			//make sure that the user put in a valid pattern before proceeding
 			if r.MatchString(request.URL.Query().Get("startDate")) != false {
+				r = nil
 				slashRegex := regexp.MustCompile("/")
 				//break the date into the separate parts
 				dateArray := slashRegex.Split(request.URL.Query().Get("startDate"), -1)
@@ -394,6 +395,7 @@ func RangeHandler(writer http.ResponseWriter, request *http.Request) {
 					}
 				}
 			} else {
+				r = nil
 				errorVal := "404 Error: " + request.RemoteAddr + " used " + request.Method + " on path " + request.RequestURI + " with invalid date at " + time.Now().String()
 				sendLogglyCommand("error", errorVal)
 				requestError := Songs{Error: errorVal}
@@ -403,7 +405,6 @@ func RangeHandler(writer http.ResponseWriter, request *http.Request) {
 					return
 				}
 			}
-			r = nil
 		} else {
 			errorVal := "404 Error: " + request.RemoteAddr + " used " + request.Method + " on path " + request.RequestURI + " with wrong query params " + time.Now().String()
 			sendLogglyCommand("error", errorVal)
@@ -421,6 +422,7 @@ func RangeHandler(writer http.ResponseWriter, request *http.Request) {
 			//now make sure the start and end date are both well-defined
 			r, _ := regexp.Compile("\\b\\d\\d/\\d\\d/\\d\\d\\d\\d\\b")
 			if r.MatchString(request.URL.Query().Get("startDate")) && r.MatchString(request.URL.Query().Get("endDate")) {
+				r = nil
 				slashRegex := regexp.MustCompile("/")
 				layout := "01/02/2006 3:04:05 PM"
 				location, _ := time.LoadLocation("America/New_York")
@@ -458,6 +460,7 @@ func RangeHandler(writer http.ResponseWriter, request *http.Request) {
 					}
 				}
 			} else {
+				r = nil
 				errorVal := "404 Error: " + request.RemoteAddr + " used " + request.Method + " on path " + request.RequestURI + " with invalid date format " + time.Now().String()
 				sendLogglyCommand("error", errorVal)
 				requestError := Songs{Error: errorVal}
@@ -467,7 +470,6 @@ func RangeHandler(writer http.ResponseWriter, request *http.Request) {
 					return
 				}
 			}
-			r = nil
 
 		} else {
 			errorVal := "404 Error: " + request.RemoteAddr + " used " + request.Method + " on path " + request.RequestURI + " with wrong query params " + time.Now().String()
