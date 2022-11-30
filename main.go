@@ -23,13 +23,6 @@ import (
 
 //docker run -d -p 33200:8080 daltamur-server
 
-var pool = sync.Pool{New: func() interface{} {
-	// length of a sha256 hash
-	var x []SongData
-	return x
-},
-}
-
 func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/daltamur/status", StatusHandler).Methods("GET")
@@ -142,8 +135,7 @@ func convertToDaySongsStruct(output *dynamodb.QueryOutput) DaySongs {
 	*/
 	var songs DaySongs
 
-	songs.Songs = pool.Get().([]SongData)
-	defer pool.Put(songs.Songs)
+	songs.Songs = make([]SongData, len(output.Items))
 	for i := range output.Items {
 		images := make([]Image, len(output.Items[i]["artist-image"].L))
 		for x := range output.Items[i]["artist-image"].L {
@@ -204,12 +196,11 @@ func convertToDaySongsStruct(output *dynamodb.QueryOutput) DaySongs {
 			UTS:          uts,
 		}
 
-		songs.Songs = append(songs.Songs, songStruct)
+		songs.Songs[i] = songStruct
 	}
 	sort.Slice(songs.Songs, func(i, j int) bool {
 		return songs.Songs[i].UTS > songs.Songs[j].UTS
 	})
-
 	return songs
 }
 
@@ -563,6 +554,10 @@ func filterTwoDays(t *time.Time, t2 *time.Time, writer http.ResponseWriter) {
 	if err != nil {
 		return
 	}
+	for _, k := range keys {
+		delete(allSongs.AllSongs, k)
+		dayMap.Remove(k)
+	}
 	jsonBytes = nil
 	keys = nil
 	dayMap.Clear()
@@ -584,6 +579,7 @@ func getSingleDayVals(t time.Time) DaySongs {
 	if len(dayValString) == 1 {
 		dayValString = "0" + dayValString
 	}
+
 	queryInput := dynamodb.QueryInput{
 		IndexName: aws.String("date-index"),
 		TableName: aws.String("daltamur-LastFMTracks"),
@@ -601,12 +597,7 @@ func getSingleDayVals(t time.Time) DaySongs {
 
 	returnedVal, _ := svc.Query(&queryInput)
 	songs := convertToDaySongsStruct(returnedVal)
-	returnedVal.Count = nil
-	returnedVal.ConsumedCapacity = nil
-	returnedVal.Items = nil
-	returnedVal.LastEvaluatedKey = nil
-	returnedVal.ScannedCount = nil
-	returnedVal = nil
+	svc = nil
 	return songs
 }
 
