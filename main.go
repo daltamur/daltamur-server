@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/http/pprof"
 	"regexp"
+	"runtime"
 	"runtime/debug"
 	"sort"
 	"strconv"
@@ -512,7 +513,10 @@ func filterTwoDays(t *time.Time, t2 *time.Time, writer http.ResponseWriter) {
 	//set the db and filter up
 	var wg sync.WaitGroup
 	var currentDay *time.Time
-	var allDays []DaySongs
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+	fmt.Printf("%d KB\n", m.Alloc/1024)
+	allDays := make(map[string]DaySongs)
 	currentDay = t
 	for !(*currentDay).Equal(*t2) {
 		wg.Add(1)
@@ -532,29 +536,23 @@ func filterTwoDays(t *time.Time, t2 *time.Time, writer http.ResponseWriter) {
 		var curYear = yearString
 		var dayValue = *currentDay
 		dayString := curMonthVal + "/" + curDayVal + "/" + curYear
-		allDays = append(allDays, getSingleDayVals(dayValue, dayString))
-		//jsonBytes, _ := json.Marshal(getSingleDayVals(dayValue, dayString))
-		//_, _ = writer.Write(jsonBytes)
-		//jsonBytes = nil
+		dayVal := getSingleDayVals(dayValue, dayString)
+		if len(dayVal.Songs) != 0 {
+			allDays[dayString] = dayVal
+		}
+		dayVal.Songs = nil
 		*currentDay = (*currentDay).AddDate(0, 0, 1)
 	}
 	jsonBytes, _ := json.Marshal(allDays)
 	_, _ = writer.Write(jsonBytes)
-	for i := range allDays {
-		for x := range allDays[i].Songs {
-			allDays[i].Songs[x].AlbumImages = nil
-			allDays[i].Songs[x].ArtistImages = nil
-			allDays[i].Songs[x].UTS = 0
-			allDays[i].Songs[x].Artist = ""
-			allDays[i].Songs[x].Time = ""
-			allDays[i].Songs[x].Date = ""
-			allDays[i].Songs[x].Name = ""
-		}
-		allDays[i].Songs = nil
+	for k := range allDays {
+		delete(allDays, k)
 	}
-	allDays = nil
+
 	jsonBytes = nil
+	allDays = nil
 	debug.FreeOSMemory()
+	//runtime.GC()
 }
 
 func getSingleDayVals(t time.Time, day string) DaySongs {
