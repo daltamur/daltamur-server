@@ -551,6 +551,10 @@ func filterTwoDays(t *time.Time, t2 *time.Time, writer http.ResponseWriter) {
 
 	jsonBytes = nil
 	allDays = nil
+	fmt.Printf("Alloc = %v KB", m.Alloc/1024)
+	fmt.Printf("\tTotalAlloc = %v KB", m.TotalAlloc/2014)
+	fmt.Printf("\tSys = %v KB", m.Sys/1024)
+	fmt.Printf("\tNumGC = %v\n", m.NumGC)
 	debug.FreeOSMemory()
 	runtime.GC()
 }
