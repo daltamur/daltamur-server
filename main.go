@@ -349,6 +349,7 @@ func RangeHandler(writer http.ResponseWriter, request *http.Request) {
 		//do the filtering here
 		fmt.Println("ZONE : ", location, " Time : ", (*timePointer).In(location).Unix())
 		filterSingleDay(timePointer, writer)
+		writer = nil
 		msgVal := "200: " + request.RemoteAddr + " used " + request.Method + " on path " + request.RequestURI + " at " + time.Now().String()
 		sendLogglyCommand("info", msgVal)
 
@@ -391,6 +392,7 @@ func RangeHandler(writer http.ResponseWriter, request *http.Request) {
 						//finally do the scan of the database here
 						//do this tmrrw
 						filterSingleDay(&startTime, writer)
+						writer = nil
 						msgVal := "200: " + request.RemoteAddr + " used " + request.Method + " on path " + request.RequestURI + " at " + time.Now().String()
 						sendLogglyCommand("info", msgVal)
 					}
@@ -402,6 +404,7 @@ func RangeHandler(writer http.ResponseWriter, request *http.Request) {
 				requestError := Songs{Error: errorVal}
 				jsonBytes, _ := json.Marshal(requestError)
 				_, err := writer.Write(jsonBytes)
+				writer = nil
 				if err != nil {
 					return
 				}
@@ -412,6 +415,7 @@ func RangeHandler(writer http.ResponseWriter, request *http.Request) {
 			requestError := Songs{Error: errorVal}
 			jsonBytes, _ := json.Marshal(requestError)
 			_, err := writer.Write(jsonBytes)
+			writer = nil
 			if err != nil {
 				return
 			}
@@ -461,6 +465,7 @@ func RangeHandler(writer http.ResponseWriter, request *http.Request) {
 							requestError := Songs{Error: errorVal}
 							jsonBytes, _ := json.Marshal(requestError)
 							_, err := writer.Write(jsonBytes)
+							writer = nil
 							if err != nil {
 								return
 							}
@@ -570,8 +575,8 @@ func filterTwoDays(t *time.Time, t2 *time.Time, writer http.ResponseWriter) {
 	//fmt.Printf("\tSys = %v KB", m.Sys/1024)
 	//fmt.Printf("\tNumGC = %v\n", m.NumGC)
 	//
-	debug.FreeOSMemory()
-	runtime.GC()
+	//debug.FreeOSMemory()
+	//runtime.GC()
 }
 
 func getSingleDayVals(t time.Time, day string) DaySongs {
@@ -627,6 +632,7 @@ func AllHandler(writer http.ResponseWriter, request *http.Request) {
 			requestError := Songs{Error: errorVal}
 			jsonBytes, _ := json.Marshal(requestError)
 			_, err := writer.Write(jsonBytes)
+			writer = nil
 			if err != nil {
 				return
 			}
@@ -639,6 +645,7 @@ func AllHandler(writer http.ResponseWriter, request *http.Request) {
 				msgVal := "200: " + request.RemoteAddr + " used " + request.Method + " on path " + request.RequestURI + " at " + time.Now().String()
 				sendLogglyCommand("info", msgVal)
 			}
+			writer = nil
 		}
 	default:
 		errorVal := "404 Error: " + request.RemoteAddr + " used " + request.Method + " on path " + request.RequestURI + " with too many query params at " + time.Now().String()
@@ -646,6 +653,7 @@ func AllHandler(writer http.ResponseWriter, request *http.Request) {
 		requestError := Songs{Error: errorVal}
 		jsonBytes, _ := json.Marshal(requestError)
 		_, err := writer.Write(jsonBytes)
+		writer = nil
 		if err != nil {
 			return
 		}
@@ -714,6 +722,7 @@ func sendAllTableData(writer http.ResponseWriter, page int) {
 				pageNum++
 				return foundPage
 			})
+		writer = nil
 		svc = nil
 	}
 
@@ -748,6 +757,7 @@ func sendTableData(writer http.ResponseWriter) {
 	_, err := writer.Write(jsonBytes)
 	svc = nil
 	tableDescription = nil
+	writer = nil
 	if err != nil {
 		return
 	}
