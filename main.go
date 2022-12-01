@@ -468,6 +468,7 @@ func RangeHandler(writer http.ResponseWriter, request *http.Request) {
 							filterTwoDays(&startTime, &endTime, writer)
 							msgVal := "200: " + request.RemoteAddr + " used " + request.Method + " on path " + request.RequestURI + " at " + time.Now().String()
 							sendLogglyCommand("info", msgVal)
+							writer = nil
 						}
 					}
 				}
