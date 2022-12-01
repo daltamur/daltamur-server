@@ -454,10 +454,21 @@ func RangeHandler(writer http.ResponseWriter, request *http.Request) {
 							return
 						}
 					} else {
-						//now do the call
-						filterTwoDays(&startTime, &endTime, writer)
-						msgVal := "200: " + request.RemoteAddr + " used " + request.Method + " on path " + request.RequestURI + " at " + time.Now().String()
-						sendLogglyCommand("info", msgVal)
+						//now do the call iff there is only ten days between the two dates
+						if endTime.Sub(startTime).Hours()/24 >= 11 {
+							errorVal := "404 Error: " + request.RemoteAddr + " used " + request.Method + " on path " + request.RequestURI + " with too many days (the range can be ten at most) at " + time.Now().String()
+							sendLogglyCommand("error", errorVal)
+							requestError := Songs{Error: errorVal}
+							jsonBytes, _ := json.Marshal(requestError)
+							_, err := writer.Write(jsonBytes)
+							if err != nil {
+								return
+							}
+						} else {
+							filterTwoDays(&startTime, &endTime, writer)
+							msgVal := "200: " + request.RemoteAddr + " used " + request.Method + " on path " + request.RequestURI + " at " + time.Now().String()
+							sendLogglyCommand("info", msgVal)
+						}
 					}
 				}
 			} else {
@@ -543,22 +554,23 @@ func filterTwoDays(t *time.Time, t2 *time.Time, writer http.ResponseWriter) {
 		dayVal.Songs = nil
 		*currentDay = (*currentDay).AddDate(0, 0, 1)
 	}
-	//jsonBytes, _ := json.Marshal(allDays)
-	//_, _ = writer.Write(jsonBytes)
+	jsonBytes, _ := json.Marshal(allDays)
+	_, _ = writer.Write(jsonBytes)
 	fmt.Println(allDays["11/13/2021"].Day)
 	for k := range allDays {
 		delete(allDays, k)
 	}
 
-	////jsonBytes = nil
+	jsonBytes = nil
 	allDays = nil
+	writer = nil
 	//fmt.Printf("Alloc = %v KB", m.Alloc/1024)
 	//fmt.Printf("\tTotalAlloc = %v KB", m.TotalAlloc/2014)
 	//fmt.Printf("\tSys = %v KB", m.Sys/1024)
 	//fmt.Printf("\tNumGC = %v\n", m.NumGC)
 	//
-	//debug.FreeOSMemory()
-	//runtime.GC()
+	debug.FreeOSMemory()
+	runtime.GC()
 }
 
 func getSingleDayVals(t time.Time, day string) DaySongs {
