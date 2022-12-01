@@ -516,7 +516,7 @@ func filterTwoDays(t *time.Time, t2 *time.Time, writer http.ResponseWriter) {
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
 	fmt.Printf("%d KB\n", m.Alloc/1024)
-	var allDays map[string]DaySongs
+	allDays := make(map[string]DaySongs)
 	currentDay = t
 	for !(*currentDay).Equal(*t2) {
 		wg.Add(1)
@@ -545,6 +545,7 @@ func filterTwoDays(t *time.Time, t2 *time.Time, writer http.ResponseWriter) {
 	}
 	//jsonBytes, _ := json.Marshal(allDays)
 	//_, _ = writer.Write(jsonBytes)
+	fmt.Println(allDays["11/13/2021"].Day)
 	for k := range allDays {
 		delete(allDays, k)
 	}
