@@ -315,6 +315,7 @@ func filterSingleDay(t *time.Time, writer http.ResponseWriter) {
 	jsonBytes, _ := json.Marshal(songs)
 	_, err := writer.Write(jsonBytes)
 	svc = nil
+	debug.FreeOSMemory()
 	if err != nil {
 		return
 	}
@@ -324,6 +325,7 @@ func filterSingleDay(t *time.Time, writer http.ResponseWriter) {
 }
 
 func RangeHandler(writer http.ResponseWriter, request *http.Request) {
+	defer debug.FreeOSMemory()
 	switch len(request.URL.Query()) {
 	case 0:
 		layout := "01/02/2006 3:04:05 PM"
@@ -460,15 +462,15 @@ func RangeHandler(writer http.ResponseWriter, request *http.Request) {
 					} else {
 						//now do the call iff there is only ten days between the two dates
 						if endTime.Sub(startTime).Hours()/24 >= 11 {
-							errorVal := "404 Error: " + request.RemoteAddr + " used " + request.Method + " on path " + request.RequestURI + " with too many days (the range can be ten at most) at " + time.Now().String()
-							sendLogglyCommand("error", errorVal)
-							requestError := Songs{Error: errorVal}
-							jsonBytes, _ := json.Marshal(requestError)
-							_, err := writer.Write(jsonBytes)
-							writer = nil
-							if err != nil {
-								return
-							}
+							//errorVal := "404 Error: " + request.RemoteAddr + " used " + request.Method + " on path " + request.RequestURI + " with too many days (the range can be ten at most) at " + time.Now().String()
+							//sendLogglyCommand("error", errorVal)
+							//requestError := Songs{Error: errorVal}
+							//jsonBytes, _ := json.Marshal(requestError)
+							//_, err := writer.Write(jsonBytes)
+							//writer = nil
+							//if err != nil {
+							//	return
+							//}
 						} else {
 							filterTwoDays(&startTime, &endTime, writer)
 							msgVal := "200: " + request.RemoteAddr + " used " + request.Method + " on path " + request.RequestURI + " at " + time.Now().String()
@@ -511,7 +513,6 @@ func RangeHandler(writer http.ResponseWriter, request *http.Request) {
 		}
 
 	}
-	debug.FreeOSMemory()
 
 }
 
@@ -616,6 +617,7 @@ func getSingleDayVals(t time.Time, day string) DaySongs {
 }
 
 func AllHandler(writer http.ResponseWriter, request *http.Request) {
+	defer debug.FreeOSMemory()
 	var pageNum int
 	var err error
 
@@ -722,6 +724,7 @@ func sendAllTableData(writer http.ResponseWriter, page int) {
 				pageNum++
 				return foundPage
 			})
+		debug.FreeOSMemory()
 		writer = nil
 		svc = nil
 	}
@@ -735,9 +738,11 @@ func ErrorHandler(writer http.ResponseWriter, request *http.Request) {
 }
 
 func StatusHandler(writer http.ResponseWriter, request *http.Request) {
+	defer debug.FreeOSMemory()
 	switch len(request.URL.Query()) {
 	case 0:
 		sendTableData(writer)
+		writer = nil
 		msgVal := "200: " + request.RemoteAddr + " used " + request.Method + " on path " + request.RequestURI + " at " + time.Now().String()
 		sendLogglyCommand("info", msgVal)
 
