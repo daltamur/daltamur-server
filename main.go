@@ -13,9 +13,11 @@ import (
 	"net/http"
 	"net/http/pprof"
 	"regexp"
+	"runtime"
 	"runtime/debug"
 	"sort"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -508,47 +510,47 @@ Using the filter function from DynamoDB is just way too slow to get quality resu
 */
 
 func filterTwoDays(t *time.Time, t2 *time.Time, writer http.ResponseWriter) {
-	////set the db and filter up
-	//var wg sync.WaitGroup
-	//var currentDay *time.Time
-	//var m runtime.MemStats
-	//runtime.ReadMemStats(&m)
-	//fmt.Printf("%d KB\n", m.Alloc/1024)
-	//var allDays map[string]DaySongs
-	//currentDay = t
-	//for !(*currentDay).Equal(*t2) {
-	//	wg.Add(1)
-	//	monthString := strconv.Itoa(int((*currentDay).Month()))
-	//	if len(monthString) == 1 {
-	//		monthString = "0" + monthString
-	//	}
-	//
-	//	dayValString := strconv.Itoa((*currentDay).Day())
-	//	if len(dayValString) == 1 {
-	//		dayValString = "0" + dayValString
-	//	}
-	//
-	//	yearString := strconv.Itoa((*currentDay).Year())
-	//	var curDayVal = dayValString
-	//	var curMonthVal = monthString
-	//	var curYear = yearString
-	//	var dayValue = *currentDay
-	//	dayString := curMonthVal + "/" + curDayVal + "/" + curYear
-	//	dayVal := getSingleDayVals(dayValue, dayString)
-	//	if len(dayVal.Songs) != 0 {
-	//		allDays[dayString] = dayVal
-	//	}
-	//	dayVal.Songs = nil
-	//	*currentDay = (*currentDay).AddDate(0, 0, 1)
-	//}
+	//set the db and filter up
+	var wg sync.WaitGroup
+	var currentDay *time.Time
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+	fmt.Printf("%d KB\n", m.Alloc/1024)
+	var allDays map[string]DaySongs
+	currentDay = t
+	for !(*currentDay).Equal(*t2) {
+		wg.Add(1)
+		monthString := strconv.Itoa(int((*currentDay).Month()))
+		if len(monthString) == 1 {
+			monthString = "0" + monthString
+		}
+
+		dayValString := strconv.Itoa((*currentDay).Day())
+		if len(dayValString) == 1 {
+			dayValString = "0" + dayValString
+		}
+
+		yearString := strconv.Itoa((*currentDay).Year())
+		var curDayVal = dayValString
+		var curMonthVal = monthString
+		var curYear = yearString
+		var dayValue = *currentDay
+		dayString := curMonthVal + "/" + curDayVal + "/" + curYear
+		dayVal := getSingleDayVals(dayValue, dayString)
+		if len(dayVal.Songs) != 0 {
+			allDays[dayString] = dayVal
+		}
+		dayVal.Songs = nil
+		*currentDay = (*currentDay).AddDate(0, 0, 1)
+	}
 	//jsonBytes, _ := json.Marshal(allDays)
 	//_, _ = writer.Write(jsonBytes)
-	//for k := range allDays {
-	//	delete(allDays, k)
-	//}
-	//
+	for k := range allDays {
+		delete(allDays, k)
+	}
+
 	////jsonBytes = nil
-	//allDays = nil
+	allDays = nil
 	//fmt.Printf("Alloc = %v KB", m.Alloc/1024)
 	//fmt.Printf("\tTotalAlloc = %v KB", m.TotalAlloc/2014)
 	//fmt.Printf("\tSys = %v KB", m.Sys/1024)
