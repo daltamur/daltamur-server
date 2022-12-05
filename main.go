@@ -392,7 +392,6 @@ func RangeHandler(writer http.ResponseWriter, request *http.Request) {
 						}
 					} else {
 						//finally do the scan of the database here
-						//do this tmrrw
 						filterSingleDay(&startTime, writer)
 						writer = nil
 						msgVal := "200: " + request.RemoteAddr + " used " + request.Method + " on path " + request.RequestURI + " at " + time.Now().String()
@@ -462,15 +461,15 @@ func RangeHandler(writer http.ResponseWriter, request *http.Request) {
 					} else {
 						//now do the call iff there is only ten days between the two dates
 						if endTime.Sub(startTime).Hours()/24 >= 11 {
-							//errorVal := "404 Error: " + request.RemoteAddr + " used " + request.Method + " on path " + request.RequestURI + " with too many days (the range can be ten at most) at " + time.Now().String()
-							//sendLogglyCommand("error", errorVal)
-							//requestError := Songs{Error: errorVal}
-							//jsonBytes, _ := json.Marshal(requestError)
-							//_, err := writer.Write(jsonBytes)
-							//writer = nil
-							//if err != nil {
-							//	return
-							//}
+							errorVal := "404 Error: " + request.RemoteAddr + " used " + request.Method + " on path " + request.RequestURI + " with too many days (the range can be ten at most) at " + time.Now().String()
+							sendLogglyCommand("error", errorVal)
+							requestError := Songs{Error: errorVal}
+							jsonBytes, _ := json.Marshal(requestError)
+							_, err := writer.Write(jsonBytes)
+							writer = nil
+							if err != nil {
+								return
+							}
 						} else {
 							filterTwoDays(&startTime, &endTime, writer)
 							msgVal := "200: " + request.RemoteAddr + " used " + request.Method + " on path " + request.RequestURI + " at " + time.Now().String()
